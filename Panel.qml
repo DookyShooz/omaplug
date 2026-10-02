@@ -1478,7 +1478,12 @@ Panel {
       var entries = Array.isArray(layout[section]) ? layout[section] : []
       for (var i = 0; i < entries.length; i++) {
         var widgets = entries[i] && Array.isArray(entries[i].widgets) ? entries[i].widgets : []
-        for (var j = 0; j < widgets.length; j++) nested[String(widgets[j])] = true
+        for (var j = 0; j < widgets.length; j++) {
+          // Hosts store either bare ids or { entry: { id }, listed } objects.
+          var w = widgets[j]
+          var wid = w && typeof w === "object" ? (w.entry && w.entry.id) || w.id : w
+          if (wid) nested[String(wid)] = true
+        }
       }
     }
     root.nestedWidgetIds = nested

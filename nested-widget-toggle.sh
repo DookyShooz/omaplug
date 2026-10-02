@@ -10,14 +10,16 @@ config=$(omarchy-shell shell listShellConfig)
 
 if [[ $action == disable ]]; then
   changes=$(jq -er --arg id "$id" '
+    # Hosts store either bare ids or { entry: { id }, listed } objects.
+    def wid: if type == "object" then (.entry.id // .id) else . end;
     if type != "object" then error("invalid config") else . end
     | (.bar.layout // {})
     | if type != "object" then error("invalid layout") else . end
     | [to_entries[] | .value
         | if type != "array" then error("invalid section") else .[] end
         | select(type == "object")
-        | select((.widgets | type) == "array" and (.widgets | index($id)) != null)
-        | [.id, (.widgets | map(select(. != $id)) | tojson)] | @tsv]
+        | select((.widgets | type) == "array" and (.widgets | any(wid == $id)))
+        | [.id, (.widgets | map(select(wid != $id)) | tojson)] | @tsv]
     | join("\n")
   ' <<< "$config")
   while IFS=$'\t' read -r host widgets; do
